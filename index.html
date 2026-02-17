@@ -581,6 +581,151 @@
   }
 
   .hidden { display: none !important; }
+
+  /* Screen multi-select dropdown */
+  .screen-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    margin-top: 4px;
+    overflow: hidden;
+    display: none;
+    border: 1.5px solid var(--border);
+  }
+
+  .screen-dropdown.open {
+    display: block;
+    animation: slideDown 0.2s ease;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .screen-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .screen-option:hover {
+    background: var(--primary-bg);
+  }
+
+  .screen-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .screen-option.selected .screen-checkbox {
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+
+  .screen-checkbox svg {
+    width: 12px;
+    height: 12px;
+    stroke: white;
+    stroke-width: 3;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .screen-option.selected .screen-checkbox svg {
+    opacity: 1;
+  }
+
+  .screen-option-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .screen-option-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .selector-row-wrapper {
+    position: relative;
+  }
+
+  .screen-dropdown-footer {
+    border-top: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .screen-select-all {
+    font-size: 13px;
+    color: var(--primary);
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .screen-select-all:hover {
+    text-decoration: underline;
+  }
+
+  .screen-done-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .screen-done-btn:hover {
+    background: #5b4bd6;
+  }
+
+  .selected-screens-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 180px;
+  }
+
+  .screen-tag {
+    background: var(--primary);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .screen-tag-more {
+    background: var(--primary-light);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
 </style>
 </head>
 <body>
@@ -598,12 +743,58 @@
     <h3>When should this be shown?</h3>
     <p class="subtitle">You can always change this later in clip details.</p>
 
-    <div class="selector-row" id="screenSelector">
-      <span class="label">Show on</span>
-      <span class="value" id="screenValue">
-        All screens
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-      </span>
+    <div class="selector-row-wrapper">
+      <div class="selector-row" id="screenSelector" onclick="toggleScreenDropdown()">
+        <span class="label">Show on</span>
+        <span class="value" id="screenValue">
+          <span class="selected-screens-tags" id="selectedScreensTags">
+            <span class="screen-tag">All screens</span>
+          </span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </span>
+      </div>
+      <div class="screen-dropdown" id="screenDropdown">
+        <div class="screen-option selected" data-screen="all" onclick="toggleScreen('all')">
+          <div class="screen-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="screen-option-label">All screens</span>
+        </div>
+        <div class="screen-option" data-screen="lobby" onclick="toggleScreen('lobby')">
+          <div class="screen-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="screen-option-label">Lobby</span>
+        </div>
+        <div class="screen-option" data-screen="bar" onclick="toggleScreen('bar')">
+          <div class="screen-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="screen-option-label">Bar area</span>
+        </div>
+        <div class="screen-option" data-screen="lounge" onclick="toggleScreen('lounge')">
+          <div class="screen-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="screen-option-label">Lounge</span>
+        </div>
+        <div class="screen-option" data-screen="entrance" onclick="toggleScreen('entrance')">
+          <div class="screen-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="screen-option-label">Entrance</span>
+        </div>
+        <div class="screen-option" data-screen="patio" onclick="toggleScreen('patio')">
+          <div class="screen-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="screen-option-label">Patio</span>
+        </div>
+        <div class="screen-dropdown-footer">
+          <span class="screen-select-all" onclick="selectAllScreens()">Select all</span>
+          <button class="screen-done-btn" onclick="closeScreenDropdown()">Done</button>
+        </div>
+      </div>
     </div>
 
     <div class="selector-row" id="scheduleSelector" onclick="showSchedulePanel()">
@@ -725,12 +916,21 @@
 const DAY_NAMES_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_NAMES_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+const SCREENS = [
+  { id: 'all', label: 'All screens' },
+  { id: 'lobby', label: 'Lobby' },
+  { id: 'bar', label: 'Bar area' },
+  { id: 'lounge', label: 'Lounge' },
+  { id: 'entrance', label: 'Entrance' },
+  { id: 'patio', label: 'Patio' }
+];
+
 let state = {
   selectedDays: [0, 1, 2, 3, 4, 5, 6],
   timeSlots: [{ from: '09:00', until: '17:00' }],
   allDay: false,
   activePreset: 'always',
-  screen: 'all'
+  selectedScreens: ['all']
 };
 
 let savedState = JSON.parse(JSON.stringify(state));
@@ -1016,10 +1216,91 @@ function updatePresetChips() {
 
 function publish() {
   const summary = document.getElementById('scheduleSummaryText').textContent;
-  alert(`Published!\nSchedule: ${summary}\nScreen: ${state.screen === 'all' ? 'All screens' : state.screen}`);
+  const screenSummary = state.selectedScreens.includes('all') 
+    ? 'All screens' 
+    : state.selectedScreens.map(s => SCREENS.find(sc => sc.id === s)?.label || s).join(', ');
+  alert(`Published!\nSchedule: ${summary}\nScreens: ${screenSummary}`);
 }
 
 function updateTimeVisual() {}
+
+// Screen multi-select functions
+function toggleScreenDropdown() {
+  const dropdown = document.getElementById('screenDropdown');
+  dropdown.classList.toggle('open');
+}
+
+function closeScreenDropdown() {
+  document.getElementById('screenDropdown').classList.remove('open');
+}
+
+function toggleScreen(screenId) {
+  event.stopPropagation();
+  
+  if (screenId === 'all') {
+    if (state.selectedScreens.includes('all')) {
+      return;
+    }
+    state.selectedScreens = ['all'];
+  } else {
+    state.selectedScreens = state.selectedScreens.filter(s => s !== 'all');
+    
+    const idx = state.selectedScreens.indexOf(screenId);
+    if (idx > -1) {
+      if (state.selectedScreens.length > 1) {
+        state.selectedScreens.splice(idx, 1);
+      }
+    } else {
+      state.selectedScreens.push(screenId);
+    }
+    
+    const individualScreens = SCREENS.filter(s => s.id !== 'all').map(s => s.id);
+    if (individualScreens.every(s => state.selectedScreens.includes(s))) {
+      state.selectedScreens = ['all'];
+    }
+  }
+  
+  updateScreenUI();
+}
+
+function selectAllScreens() {
+  event.stopPropagation();
+  state.selectedScreens = ['all'];
+  updateScreenUI();
+}
+
+function updateScreenUI() {
+  document.querySelectorAll('.screen-option').forEach(opt => {
+    const screenId = opt.dataset.screen;
+    opt.classList.toggle('selected', state.selectedScreens.includes(screenId));
+  });
+  
+  const tagsContainer = document.getElementById('selectedScreensTags');
+  const selected = state.selectedScreens;
+  
+  if (selected.includes('all')) {
+    tagsContainer.innerHTML = '<span class="screen-tag">All screens</span>';
+  } else if (selected.length <= 2) {
+    tagsContainer.innerHTML = selected.map(s => {
+      const screen = SCREENS.find(sc => sc.id === s);
+      return `<span class="screen-tag">${screen ? screen.label : s}</span>`;
+    }).join('');
+  } else {
+    const first = SCREENS.find(sc => sc.id === selected[0]);
+    tagsContainer.innerHTML = `
+      <span class="screen-tag">${first ? first.label : selected[0]}</span>
+      <span class="screen-tag-more">+${selected.length - 1} more</span>
+    `;
+  }
+}
+
+document.addEventListener('click', function(e) {
+  const dropdown = document.getElementById('screenDropdown');
+  const selector = document.getElementById('screenSelector');
+  if (!dropdown.contains(e.target) && !selector.contains(e.target)) {
+    dropdown.classList.remove('open');
+  }
+});
 </script>
 
 </body>
