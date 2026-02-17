@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clip Scheduler</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary: #6C5CE7;
+    --primary-light: #A29BFE;
+    --primary-bg: #EDE9FE;
+    --text: #1a1a2e;
+    --text-secondary: #64748b;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #e2e8f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: var(--text);
+  }
+
+  .phone-frame {
+    width: 390px;
+    min-height: 700px;
+    background: var(--bg);
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Preview area */
+  .preview-area {
+    background: #9ca3af;
+    height: 320px;
+    position: relative;
+  }
+
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+  }
+
+  .preview-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--text);
+    backdrop-filter: blur(4px);
+    transition: background 0.2s;
+  }
+
+  .close-btn:hover { background: rgba(255,255,255,0.4); }
+
+  /* Bottom sheet */
+  .bottom-sheet {
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    padding: 28px 24px 32px;
+    position: relative;
+    margin-top: -16px;
+  }
+
+  .bottom-sheet h3 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .bottom-sheet .subtitle {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 24px;
+    line-height: 1.4;
+  }
+
+  /* Selector rows */
+  .selector-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--primary-bg);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+  }
+
+  .selector-row:hover {
+    border-color: var(--primary-light);
+  }
+
+  .selector-row .label {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .selector-row .value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .selector-row .value svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s;
+  }
+
+  /* Schedule summary badge */
+  .schedule-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .schedule-badge {
+    background: var(--primary);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  /* Quick presets - IMPROVEMENT */
+  .quick-presets {
+    margin-top: 16px;
+    margin-bottom: 8px;
+  }
+
+  .quick-presets-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
+  .preset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .preset-chip {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .preset-chip:hover {
+    border-color: var(--primary);
+    background: var(--primary-bg);
+    color: var(--primary);
+  }
+
+  .preset-chip.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  /* Buttons */
+  .button-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    text-align: center;
+  }
+
+  .btn-outline {
+    background: var(--card);
+    color: var(--primary);
+    border-color: var(--primary-light);
+  }
+
+  .btn-outline:hover {
+    background: var(--primary-bg);
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #5b4bd6;
+  }
+
+  /* Schedule detail panel */
+  .schedule-panel {
+    display: none;
+  }
+
+  .schedule-panel.active {
+    display: block;
+  }
+
+  .main-panel.hidden {
+    display: none;
+  }
+
+  .schedule-panel h3 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  /* Day type toggle */
+  .day-type-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .day-type-btn {
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    transition: all 0.2s;
+  }
+
+  .day-type-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .day-type-btn:hover:not(.active) {
+    border-color: var(--primary-light);
+  }
+
+  /* Day circles */
+  .day-circles {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    justify-content: center;
+  }
+
+  .day-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    transition: all 0.2s;
+  }
+
+  .day-circle.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .day-circle:hover:not(.active) {
+    border-color: var(--primary-light);
+    background: var(--primary-bg);
+  }
+
+  /* Time inputs */
+  .time-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .time-input-group {
+    flex: 1;
+    position: relative;
+  }
+
+  .time-input-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .time-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    gap: 4px;
+    transition: border-color 0.2s;
+  }
+
+  .time-input-wrapper:focus-within {
+    border-color: var(--primary);
+  }
+
+  .time-input-wrapper input[type="time"] {
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    outline: none;
+    width: 100%;
+    font-family: inherit;
+  }
+
+  /* IMPROVEMENT: Visual time range bar */
+  .time-range-visual {
+    margin: 16px 0 20px;
+    position: relative;
+  }
+
+  .time-bar-bg {
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .time-bar-fill {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 4px;
+    transition: all 0.3s;
+  }
+
+  .time-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* IMPROVEMENT: Duration display */
+  .duration-display {
+    text-align: center;
+    font-size: 13px;
+    color: var(--primary);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* Time slots */
+  .time-slot {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+    border: 1.5px solid var(--border);
+  }
+
+  .time-slot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .time-slot-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .remove-slot-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: #fee2e2;
+    color: #ef4444;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .remove-slot-btn:hover {
+    background: #fecaca;
+  }
+
+  .add-slot-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 12px;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--primary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .add-slot-btn:hover {
+    border-color: var(--primary-light);
+    background: var(--primary-bg);
+  }
+
+  /* IMPROVEMENT: Schedule preview text */
+  .schedule-preview {
+    background: var(--primary-bg);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .schedule-preview-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .schedule-preview-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .schedule-preview-text strong {
+    color: var(--primary);
+  }
+
+  /* IMPROVEMENT: Conflict warning */
+  .conflict-warning {
+    display: none;
+    background: #FFF7ED;
+    border: 1.5px solid #FED7AA;
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #9A3412;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .conflict-warning.visible {
+    display: flex;
+  }
+
+  /* Animations */
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .bottom-sheet {
+    animation: slideUp 0.3s ease;
+  }
+
+  /* IMPROVEMENT: All-day toggle */
+  .all-day-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 10px 0;
+  }
+
+  .all-day-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .toggle-switch {
+    width: 48px;
+    height: 28px;
+    background: var(--border);
+    border-radius: 14px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .toggle-switch.active {
+    background: var(--primary);
+  }
+
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+
+  .toggle-switch.active::after {
+    transform: translateX(20px);
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="preview-area">
+    <div class="preview-header">
+      <h2>Preview</h2>
+      <button class="close-btn" aria-label="Close">&times;</button>
+    </div>
+  </div>
+
+  <!-- Main panel -->
+  <div class="bottom-sheet main-panel" id="mainPanel">
+    <h3>When should this be shown?</h3>
+    <p class="subtitle">You can always change this later in clip details.</p>
+
+    <div class="selector-row" id="screenSelector">
+      <span class="label">Show on</span>
+      <span class="value" id="screenValue">
+        All screens
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+    </div>
+
+    <div class="selector-row" id="scheduleSelector" onclick="showSchedulePanel()">
+      <span class="label">Schedule</span>
+      <span class="value" id="scheduleValue">
+        <span id="scheduleSummaryText">Always</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+    </div>
+
+    <!-- IMPROVEMENT: Quick presets for common schedules -->
+    <div class="quick-presets">
+      <div class="quick-presets-label">Quick schedules</div>
+      <div class="preset-chips">
+        <div class="preset-chip active" onclick="applyPreset('always')">Always</div>
+        <div class="preset-chip" onclick="applyPreset('weekdays')">Weekdays</div>
+        <div class="preset-chip" onclick="applyPreset('weekends')">Weekends</div>
+        <div class="preset-chip" onclick="applyPreset('lunch')">Lunch hours</div>
+        <div class="preset-chip" onclick="applyPreset('evening')">Evenings</div>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button class="btn btn-outline" onclick="showSchedulePanel()">Edit schedule</button>
+      <button class="btn btn-primary" onclick="publish()">Publish</button>
+    </div>
+  </div>
+
+  <!-- Schedule detail panel -->
+  <div class="bottom-sheet schedule-panel" id="schedulePanel">
+    <h3>Schedule</h3>
+
+    <!-- Day type toggle -->
+    <div class="day-type-toggle">
+      <button class="day-type-btn" data-type="weekdays" onclick="toggleDayType('weekdays')">Weekdays</button>
+      <button class="day-type-btn" data-type="weekends" onclick="toggleDayType('weekends')">Weekends</button>
+      <button class="day-type-btn" data-type="custom" onclick="toggleDayType('custom')">Custom</button>
+    </div>
+
+    <!-- Day circles -->
+    <div class="day-circles" id="dayCircles">
+      <div class="day-circle" data-day="0" onclick="toggleDay(this)">M</div>
+      <div class="day-circle" data-day="1" onclick="toggleDay(this)">T</div>
+      <div class="day-circle" data-day="2" onclick="toggleDay(this)">W</div>
+      <div class="day-circle" data-day="3" onclick="toggleDay(this)">T</div>
+      <div class="day-circle" data-day="4" onclick="toggleDay(this)">F</div>
+      <div class="day-circle" data-day="5" onclick="toggleDay(this)">S</div>
+      <div class="day-circle" data-day="6" onclick="toggleDay(this)">S</div>
+    </div>
+
+    <!-- IMPROVEMENT: All day toggle -->
+    <div class="all-day-row">
+      <span class="all-day-label">Show all day</span>
+      <div class="toggle-switch" id="allDayToggle" onclick="toggleAllDay()"></div>
+    </div>
+
+    <!-- Time slots container -->
+    <div id="timeSlotsContainer">
+      <div class="time-slot" data-slot="0">
+        <div class="time-slot-header">
+          <span class="time-slot-label">Time slot 1</span>
+        </div>
+        <div class="time-row">
+          <div class="time-input-group">
+            <label>From</label>
+            <div class="time-input-wrapper">
+              <input type="time" value="09:00" onchange="updateTimeVisual()">
+            </div>
+          </div>
+          <div class="time-input-group">
+            <label>Until</label>
+            <div class="time-input-wrapper">
+              <input type="time" value="17:00" onchange="updateTimeVisual()">
+            </div>
+          </div>
+        </div>
+        <!-- IMPROVEMENT: Visual time range -->
+        <div class="time-range-visual">
+          <div class="time-bar-bg">
+            <div class="time-bar-fill" style="left: 37.5%; width: 33.3%"></div>
+          </div>
+          <div class="time-bar-labels">
+            <span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>12am</span>
+          </div>
+          <div class="duration-display">8 hours</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPROVEMENT: Conflict warning -->
+    <div class="conflict-warning" id="conflictWarning">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span>Time slots overlap. The clip will show during the combined range.</span>
+    </div>
+
+    <button class="add-slot-btn" id="addSlotBtn" onclick="addTimeSlot()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14m-7-7h14"/></svg>
+      Add another time slot
+    </button>
+
+    <!-- IMPROVEMENT: Live preview of what the schedule means -->
+    <div class="schedule-preview" id="schedulePreview">
+      <div class="schedule-preview-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <div class="schedule-preview-text" id="schedulePreviewText">
+        Your clip will show <strong>every day</strong> from <strong>9:00 AM</strong> to <strong>5:00 PM</strong>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button class="btn btn-outline" onclick="cancelSchedule()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSchedule()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DAY_NAMES_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_NAMES_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+let state = {
+  selectedDays: [0, 1, 2, 3, 4, 5, 6],
+  timeSlots: [{ from: '09:00', until: '17:00' }],
+  allDay: false,
+  activePreset: 'always',
+  screen: 'all'
+};
+
+let savedState = JSON.parse(JSON.stringify(state));
+
+function showSchedulePanel() {
+  document.getElementById('mainPanel').classList.add('hidden');
+  document.getElementById('schedulePanel').classList.add('active');
+  syncUIFromState();
+}
+
+function cancelSchedule() {
+  state = JSON.parse(JSON.stringify(savedState));
+  document.getElementById('schedulePanel').classList.remove('active');
+  document.getElementById('mainPanel').classList.remove('hidden');
+}
+
+function saveSchedule() {
+  savedState = JSON.parse(JSON.stringify(state));
+  updateMainSummary();
+  document.getElementById('schedulePanel').classList.remove('active');
+  document.getElementById('mainPanel').classList.remove('hidden');
+}
+
+function syncUIFromState() {
+  document.querySelectorAll('.day-circle').forEach(el => {
+    const day = parseInt(el.dataset.day);
+    el.classList.toggle('active', state.selectedDays.includes(day));
+  });
+
+  const allWeekdays = [0,1,2,3,4].every(d => state.selectedDays.includes(d)) && ![5,6].some(d => state.selectedDays.includes(d));
+  const allWeekends = [5,6].every(d => state.selectedDays.includes(d)) && ![0,1,2,3,4].some(d => state.selectedDays.includes(d));
+  const allDays = state.selectedDays.length === 7;
+
+  document.querySelectorAll('.day-type-btn').forEach(btn => {
+    const type = btn.dataset.type;
+    btn.classList.toggle('active',
+      (type === 'weekdays' && allWeekdays) ||
+      (type === 'weekends' && allWeekends) ||
+      (type === 'custom' && !allWeekdays && !allWeekends)
+    );
+  });
+
+  document.getElementById('allDayToggle').classList.toggle('active', state.allDay);
+  renderTimeSlots();
+  updateSchedulePreview();
+}
+
+function toggleDayType(type) {
+  if (type === 'weekdays') {
+    state.selectedDays = [0, 1, 2, 3, 4];
+  } else if (type === 'weekends') {
+    state.selectedDays = [5, 6];
+  }
+  state.activePreset = null;
+  updatePresetChips();
+  syncUIFromState();
+}
+
+function toggleDay(el) {
+  const day = parseInt(el.dataset.day);
+  const idx = state.selectedDays.indexOf(day);
+  if (idx > -1) {
+    if (state.selectedDays.length > 1) {
+      state.selectedDays.splice(idx, 1);
+    }
+  } else {
+    state.selectedDays.push(day);
+    state.selectedDays.sort();
+  }
+  state.activePreset = null;
+  updatePresetChips();
+  syncUIFromState();
+}
+
+function toggleAllDay() {
+  state.allDay = !state.allDay;
+  document.getElementById('allDayToggle').classList.toggle('active', state.allDay);
+  renderTimeSlots();
+  updateSchedulePreview();
+}
+
+function renderTimeSlots() {
+  const container = document.getElementById('timeSlotsContainer');
+  if (state.allDay) {
+    container.classList.add('hidden');
+    document.getElementById('addSlotBtn').classList.add('hidden');
+    return;
+  }
+  container.classList.remove('hidden');
+  document.getElementById('addSlotBtn').classList.remove('hidden');
+
+  container.innerHTML = '';
+  state.timeSlots.forEach((slot, i) => {
+    const showRemove = state.timeSlots.length > 1;
+    const div = document.createElement('div');
+    div.className = 'time-slot';
+    div.dataset.slot = i;
+
+    const fromMinutes = timeToMinutes(slot.from);
+    const untilMinutes = timeToMinutes(slot.until);
+    const leftPct = (fromMinutes / 1440) * 100;
+    let widthPct = ((untilMinutes - fromMinutes) / 1440) * 100;
+    if (widthPct < 0) widthPct += 100;
+    const duration = calcDuration(slot.from, slot.until);
+
+    div.innerHTML = `
+      <div class="time-slot-header">
+        <span class="time-slot-label">Time slot ${i + 1}</span>
+        ${showRemove ? `<button class="remove-slot-btn" onclick="removeTimeSlot(${i})" aria-label="Remove">&times;</button>` : ''}
+      </div>
+      <div class="time-row">
+        <div class="time-input-group">
+          <label>From</label>
+          <div class="time-input-wrapper">
+            <input type="time" value="${slot.from}" onchange="updateSlotTime(${i}, 'from', this.value)">
+          </div>
+        </div>
+        <div class="time-input-group">
+          <label>Until</label>
+          <div class="time-input-wrapper">
+            <input type="time" value="${slot.until}" onchange="updateSlotTime(${i}, 'until', this.value)">
+          </div>
+        </div>
+      </div>
+      <div class="time-range-visual">
+        <div class="time-bar-bg">
+          <div class="time-bar-fill" style="left: ${leftPct}%; width: ${widthPct}%"></div>
+        </div>
+        <div class="time-bar-labels">
+          <span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>12am</span>
+        </div>
+        <div class="duration-display">${duration}</div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+
+  checkConflicts();
+}
+
+function updateSlotTime(index, field, value) {
+  state.timeSlots[index][field] = value;
+  state.activePreset = null;
+  updatePresetChips();
+  renderTimeSlots();
+  updateSchedulePreview();
+}
+
+function addTimeSlot() {
+  if (state.timeSlots.length < 3) {
+    state.timeSlots.push({ from: '18:00', until: '22:00' });
+    renderTimeSlots();
+    updateSchedulePreview();
+  }
+}
+
+function removeTimeSlot(index) {
+  state.timeSlots.splice(index, 1);
+  renderTimeSlots();
+  updateSchedulePreview();
+}
+
+function timeToMinutes(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function calcDuration(from, until) {
+  let diff = timeToMinutes(until) - timeToMinutes(from);
+  if (diff < 0) diff += 1440;
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h} hour${h > 1 ? 's' : ''}`;
+  return `${h}h ${m}m`;
+}
+
+function formatTime12(t) {
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m === 0 ? `${h12} ${ampm}` : `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+}
+
+function checkConflicts() {
+  if (state.timeSlots.length < 2) {
+    document.getElementById('conflictWarning').classList.remove('visible');
+    return;
+  }
+  let hasConflict = false;
+  for (let i = 0; i < state.timeSlots.length; i++) {
+    for (let j = i + 1; j < state.timeSlots.length; j++) {
+      const a = state.timeSlots[i], b = state.timeSlots[j];
+      const aFrom = timeToMinutes(a.from), aUntil = timeToMinutes(a.until);
+      const bFrom = timeToMinutes(b.from), bUntil = timeToMinutes(b.until);
+      if (aFrom < bUntil && bFrom < aUntil) hasConflict = true;
+    }
+  }
+  document.getElementById('conflictWarning').classList.toggle('visible', hasConflict);
+}
+
+function updateSchedulePreview() {
+  const el = document.getElementById('schedulePreviewText');
+  const dayDesc = getDayDescription();
+  if (state.allDay) {
+    el.innerHTML = `Your clip will show <strong>${dayDesc}</strong>, <strong>all day</strong>`;
+  } else {
+    const slots = state.timeSlots.map(s => `<strong>${formatTime12(s.from)}</strong> to <strong>${formatTime12(s.until)}</strong>`).join(' and ');
+    el.innerHTML = `Your clip will show <strong>${dayDesc}</strong> from ${slots}`;
+  }
+}
+
+function getDayDescription() {
+  const days = state.selectedDays;
+  if (days.length === 7) return 'every day';
+  const weekdays = [0,1,2,3,4];
+  const weekends = [5,6];
+  if (weekdays.every(d => days.includes(d)) && !weekends.some(d => days.includes(d))) return 'on weekdays';
+  if (weekends.every(d => days.includes(d)) && !weekdays.some(d => days.includes(d))) return 'on weekends';
+  return 'on ' + days.map(d => DAY_NAMES_SHORT[d]).join(', ');
+}
+
+function updateMainSummary() {
+  const el = document.getElementById('scheduleSummaryText');
+  if (state.activePreset === 'always') {
+    el.textContent = 'Always';
+    return;
+  }
+  const dayPart = getDayDescription().replace('on ', '').replace('every day', 'Every day');
+  if (state.allDay) {
+    el.textContent = `${dayPart}, all day`;
+  } else {
+    const timePart = state.timeSlots.map(s => `${formatTime12(s.from)}-${formatTime12(s.until)}`).join(', ');
+    el.textContent = `${dayPart} ${timePart}`;
+  }
+}
+
+function applyPreset(preset) {
+  state.activePreset = preset;
+  switch (preset) {
+    case 'always':
+      state.selectedDays = [0,1,2,3,4,5,6];
+      state.allDay = true;
+      state.timeSlots = [{ from: '00:00', until: '23:59' }];
+      break;
+    case 'weekdays':
+      state.selectedDays = [0,1,2,3,4];
+      state.allDay = false;
+      state.timeSlots = [{ from: '09:00', until: '17:00' }];
+      break;
+    case 'weekends':
+      state.selectedDays = [5,6];
+      state.allDay = false;
+      state.timeSlots = [{ from: '10:00', until: '22:00' }];
+      break;
+    case 'lunch':
+      state.selectedDays = [0,1,2,3,4];
+      state.allDay = false;
+      state.timeSlots = [{ from: '11:00', until: '14:00' }];
+      break;
+    case 'evening':
+      state.selectedDays = [0,1,2,3,4,5,6];
+      state.allDay = false;
+      state.timeSlots = [{ from: '18:00', until: '23:00' }];
+      break;
+  }
+  updatePresetChips();
+  savedState = JSON.parse(JSON.stringify(state));
+  updateMainSummary();
+}
+
+function updatePresetChips() {
+  document.querySelectorAll('.preset-chip').forEach(chip => {
+    chip.classList.remove('active');
+  });
+  if (state.activePreset) {
+    const chips = document.querySelectorAll('.preset-chip');
+    const presets = ['always', 'weekdays', 'weekends', 'lunch', 'evening'];
+    const idx = presets.indexOf(state.activePreset);
+    if (idx >= 0 && chips[idx]) chips[idx].classList.add('active');
+  }
+}
+
+function publish() {
+  const summary = document.getElementById('scheduleSummaryText').textContent;
+  alert(`Published!\nSchedule: ${summary}\nScreen: ${state.screen === 'all' ? 'All screens' : state.screen}`);
+}
+
+function updateTimeVisual() {}
+</script>
+
+</body>
+</html>
