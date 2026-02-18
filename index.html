@@ -726,11 +726,118 @@
     padding: 2px 8px;
     border-radius: 4px;
   }
+
+  /* Success/Published view */
+  .success-view {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    flex-direction: column;
+  }
+
+  .success-view.active {
+    display: flex;
+  }
+
+  .success-top {
+    flex: 1;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .success-bottom {
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    padding: 32px 24px 40px;
+    text-align: center;
+    margin-top: -24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .success-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 24px;
+  }
+
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--primary-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+  }
+
+  .success-icon svg {
+    width: 28px;
+    height: 28px;
+    stroke: var(--primary);
+    stroke-width: 2.5;
+  }
+
+  .success-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: var(--primary);
+    color: white;
+    margin-bottom: 12px;
+  }
+
+  .success-btn:hover {
+    background: #5b4bd6;
+  }
+
+  .success-btn-outline {
+    background: transparent;
+    border: 2px solid var(--primary-light);
+    color: var(--primary);
+  }
+
+  .success-btn-outline:hover {
+    background: var(--primary-bg);
+  }
+
+  .success-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary);
+  }
 </style>
 </head>
 <body>
 
 <div class="phone-frame">
+  <!-- Success view -->
+  <div class="success-view" id="successView">
+    <div class="success-top"></div>
+    <div class="success-bottom">
+      <h3 class="success-title">Your content is uploaded</h3>
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <button class="success-btn" onclick="closeSuccessView()">Done</button>
+      <button class="success-btn success-btn-outline" onclick="addMoreContent()">Add more content</button>
+    </div>
+    <div class="success-progress"></div>
+  </div>
+
   <div class="preview-area">
     <div class="preview-header">
       <h2>Preview</h2>
@@ -1215,11 +1322,15 @@ function updatePresetChips() {
 }
 
 function publish() {
-  const summary = document.getElementById('scheduleSummaryText').textContent;
-  const screenSummary = state.selectedScreens.includes('all') 
-    ? 'All screens' 
-    : state.selectedScreens.map(s => SCREENS.find(sc => sc.id === s)?.label || s).join(', ');
-  alert(`Published!\nSchedule: ${summary}\nScreens: ${screenSummary}`);
+  document.getElementById('successView').classList.add('active');
+}
+
+function closeSuccessView() {
+  document.getElementById('successView').classList.remove('active');
+}
+
+function addMoreContent() {
+  document.getElementById('successView').classList.remove('active');
 }
 
 function updateTimeVisual() {}
